@@ -41,12 +41,26 @@ function App() {
   const projectInputRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Auto-fit smart zoom on load
+  // Auto-fit smart zoom on load and resize
   useEffect(() => {
-    const workspaceHeight = window.innerHeight - 60; // minus topbar
-    if (workspaceHeight < 1123) {
-      setZoom(Math.max(0.2, (workspaceHeight - 80) / 1123));
-    }
+    const calculateZoom = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        // Fit width perfectly on mobile (16px padding each side = 32px)
+        setZoom(Math.max(0.1, (window.innerWidth - 32) / 794));
+      } else {
+        const workspaceHeight = window.innerHeight - 64; // minus topbar
+        if (workspaceHeight < 1123) {
+          setZoom(Math.max(0.2, (workspaceHeight - 80) / 1123));
+        } else {
+          setZoom(1);
+        }
+      }
+    };
+    
+    calculateZoom();
+    window.addEventListener('resize', calculateZoom);
+    return () => window.removeEventListener('resize', calculateZoom);
   }, []);
 
   // Deselect when clicking outside
@@ -76,8 +90,8 @@ function App() {
       type,
       x: type === 'text' ? 48 : 100,
       y: type === 'text' ? 190 : 250 + (stagger % 200),
-      width: type === 'table' ? 300 : type === 'image' ? 200 : (type === 'text' ? 698 : 150),
-      height: type === 'table' ? 200 : type === 'image' ? 200 : 'auto',
+      width: type === 'table' ? 300 : type === 'image' ? 400 : (type === 'text' ? 698 : 150),
+      height: type === 'table' ? 200 : type === 'image' ? 400 : 'auto',
       zIndex: elements.length + 1,
       content: '',
       properties: {
@@ -325,16 +339,17 @@ function App() {
           </div>
         </aside>
 
-        {/* Workspace */}
         <main className="workspace" onClick={() => setSelectedId(null)}>
-          <div 
-            className="canvas-wrapper" 
-            ref={canvasRef}
-            style={{ 
-              transform: `scale(${zoom})`,
-              backgroundImage: backgroundImg ? `url(${backgroundImg})` : 'none'
-            }}
-          >
+          <div style={{ width: 794 * zoom, height: 1123 * zoom, position: 'relative' }}>
+            <div 
+              className="canvas-wrapper" 
+              ref={canvasRef}
+              style={{ 
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left',
+                backgroundImage: backgroundImg ? `url(${backgroundImg})` : 'none'
+              }}
+            >
 
             
             {/* Elements */}
@@ -359,6 +374,7 @@ function App() {
                 default: return null;
               }
             })}
+            </div>
           </div>
         </main>
       </div>
